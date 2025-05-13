@@ -1,0 +1,206 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+  <meta http-equiv="refresh" content="10">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+
+  <!-- Sidebar -->
+  <div class="col-md-2 mb-4">
+    <div class="card p-3 shadow-sm bg-white">
+      <h5 class="mb-3">📂 Menu</h5>
+      <ul class="nav flex-column">
+        <li class="nav-item"><a class="nav-link" href="#analytics">📊 Analytics</a></li>
+        <li class="nav-item"><a class="nav-link" href="#live">📺 Live Feed</a></li>
+        <li class="nav-item"><a class="nav-link" href="#log">📋 Logs</a></li>
+        <li class="nav-item"><a class="nav-link" href="#top">🏅 Top Visitors</a></li>
+        <li class="nav-item"><a class="nav-link" href="#download">📥 Download</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="col-md-10">
+
+    <!-- Camera Status -->
+    {% set alert_class = 'alert-success' if camera_status == 'Online' else 'alert-danger' if camera_status == 'Offline' else 'alert-warning' %}
+    <div class="alert {{ alert_class }} d-flex justify-content-between align-items-center">
+      <strong>🎥 Kamera Status:</strong> {{ camera_status }}
+      <small class="text-muted">Auto-refresh setiap 10 saat</small>
+    </div>
+
+    <!-- Summary Cards -->
+    <div id="analytics" class="row mb-4">
+      <div class="col-md-4">
+        <div class="card bg-primary text-white p-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#visitorsModal" style="cursor:pointer">
+          <h5>👤 Visitors Today</h5>
+          <h2>{{ visitors_today }}</h2>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-danger text-white p-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#intrudersModal" style="cursor:pointer">
+          <h5>🚨 Intruders Today</h5>
+          <h2>{{ intruders_today }}</h2>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-success text-white p-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#detectionModal" style="cursor:pointer">
+          <h5>📅 Last Detection</h5>
+          <h6>{{ last_detection }}</h6>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live CCTV Feed -->
+    <div class="card mb-4 p-3 shadow-sm" id="live">
+      <h5>📺 Live CCTV Feed</h5>
+      <img src="{{ url_for('main.video_feed') }}" class="img-fluid rounded shadow">
+    </div>
+
+    <!-- Latest Intruder -->
+    <div class="card mb-4 p-3 shadow-sm">
+      <h5>🚨 Latest Intruder</h5>
+      {% if latest_intruder %}
+        <p><strong>Track ID:</strong> {{ latest_intruder.track_id }}</p>
+        <p><strong>Time:</strong> {{ latest_intruder.time }}</p>
+        <img src="{{ url_for('static', filename='uploads/' + latest_intruder.image) }}" class="img-fluid rounded">
+      {% else %}
+        <p class="text-muted">No intruders detected yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Chart -->
+    <div class="card mb-4 p-3 shadow-sm">
+      <h5>📈 Visitor & Intruder Statistics</h5>
+      <canvas id="visitorChart"></canvas>
+    </div>
+
+    <!-- Visitor Logs -->
+    <div class="card mb-4 p-3 shadow-sm" id="log">
+      <h5>📋 Visitor Logs</h5>
+      <table class="table table-striped table-bordered" id="visitorLogTable">
+        <thead class="table-dark">
+          <tr><th>Name</th><th>Entry</th><th>Exit</th><th>Duration (s)</th></tr>
+        </thead>
+        <tbody>
+          {% for log in visitor_logs %}
+          <tr>
+            <td>{{ log.name }}</td>
+            <td>{{ log.entry }}</td>
+            <td>{{ log.exit }}</td>
+            <td>{{ log.duration }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top Visitors -->
+    <div class="card mb-4 p-3 shadow-sm" id="top">
+      <h5>🏅 Top Visitors</h5>
+      <table class="table table-bordered">
+        <thead class="table-dark"><tr><th>Name</th><th>Count</th></tr></thead>
+        <tbody>
+          {% for visitor in top_visitors %}
+          <tr>
+            <td>
+              <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#historyModal" onclick="loadHistory('{{ visitor.name }}')">
+                {{ visitor.name }}
+              </a>
+            </td>
+            <td>{{ visitor.count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Download Logs -->
+    <div class="card p-3 shadow-sm" id="download">
+      <h5>📥 Download Logs</h5>
+      <a href="{{ url_for('main.download_csv') }}" class="btn btn-outline-secondary me-2">⬇️ Full CSV</a>
+      <a href="{{ url_for('main.download_today') }}" class="btn btn-outline-primary">📅 Today’s Report</a>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-4 text-muted">
+      <small>© 2025 Barracuda Labs x Hidrokinetik Group</small>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="visitorsModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Visitors Today</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><ul>{% for log in visitor_logs %}{% if log.entry.startswith(current_date) %}<li>{{ log.name }} - {{ log.entry }} → {{ log.exit }}</li>{% endif %}{% endfor %}</ul></div></div></div></div>
+
+<div class="modal fade" id="intrudersModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Intruders Today</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">{% if latest_intruder %}<img src="{{ url_for('static', filename='uploads/' + latest_intruder.image) }}" class="img-fluid"><p><strong>ID:</strong> {{ latest_intruder.track_id }}</p><p><strong>Time:</strong> {{ latest_intruder.time }}</p>{% else %}<p>No intruders today.</p>{% endif %}</div></div></div></div>
+
+<div class="modal fade" id="detectionModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Last Detection</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p><strong>Last detection:</strong> {{ last_detection }}</p></div></div></div></div>
+
+<div class="modal fade" id="historyModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Visit History</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><table class="table"><thead><tr><th>Entry</th><th>Exit</th><th>Duration</th></tr></thead><tbody id="historyBody"></tbody></table></div></div></div></div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('visitorChart').getContext('2d');
+  const visitorChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: {{ chart_data.labels | safe }},
+      datasets: [
+        {
+          label: 'Visitors',
+          data: {{ chart_data.visitors | safe }},
+          borderColor: 'green',
+          tension: 0.3
+        },
+        {
+          label: 'Intruders',
+          data: {{ chart_data.intruders | safe }},
+          borderColor: 'red',
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: true, text: 'Daily Statistics' }
+      }
+    }
+  });
+</script>
+
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+  $(document).ready(function () {
+    $('#visitorLogTable').DataTable();
+  });
+</script>
+
+<!-- Load Visit History -->
+<script>
+  const allLogs = {{ visitor_logs | tojson }};
+  function loadHistory(name) {
+    const body = document.getElementById("historyBody");
+    body.innerHTML = "";
+    const logs = allLogs.filter(log => log.name === name);
+    if (logs.length === 0) {
+      body.innerHTML = "<tr><td colspan='3'>No record found</td></tr>";
+    } else {
+      logs.forEach(log => {
+        const row = `<tr><td>${log.entry}</td><td>${log.exit}</td><td>${log.duration}</td></tr>`;
+        body.innerHTML += row;
+      });
+    }
+  }
+</script>
+{% endblock %}
