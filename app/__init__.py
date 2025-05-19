@@ -13,7 +13,7 @@ def create_app():
     
     # Configuration
     app.config['SECRET_KEY'] = 'secret-key-123'  # Ganti dengan key lebih kuat di production
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://faceuser:mypassword@localhost/facerecog_db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://faceuser:Hidrokinetic123._@localhost/facerecog_db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Init extensions
