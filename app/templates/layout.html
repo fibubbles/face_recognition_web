@@ -59,12 +59,7 @@
 <nav class="navbar navbar-dark bg-dark mb-4">
   <div class="container-fluid d-flex align-items-center justify-content-between">
 
-    <!-- Logo + Title -->
-    <div class="d-flex align-items-center">
-        <img src="{{ url_for('static', filename='img/Hidrokinetik Logo.jpg') }}" alt="Hidrokinetik Logo" height="40" class="me-2">
-        <img src="{{ url_for('static', filename='img/Barracuda Logo.jpg') }}" alt="Barracuda Logo" height="40" class="me-2">
-        <span class="navbar-brand mb-0 h1">FACE RECOGNITION SYSTEM</span>
-    </div>
+  
 
     <!-- User Info + Clock + Date + Logout -->
     {% if current_user.is_authenticated %}
